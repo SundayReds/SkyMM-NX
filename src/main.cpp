@@ -30,6 +30,7 @@
 #include "ini_helper.hpp"
 #include "keyboard_helper.hpp"
 #include "mod.hpp"
+#include "name_generator.hpp"
 #include "path_helper.hpp"
 #include "string_helper.hpp"
 
@@ -37,11 +38,13 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <cstdio>
@@ -365,6 +368,111 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui) {
     }
 }
 
+void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) {
+
+    // ESP
+    std::string data_dir = getRomfsPath(SKYRIM_DATA_DIR) + DIR_SEP;
+    if (mod->has_esp) {
+        rename((data_dir + mod->base_name + DOT + EXT_ESP).c_str(), 
+                (data_dir + new_base_name + DOT + EXT_ESP).c_str());
+    }
+
+    // ESM
+    if (mod->is_master) {
+        rename((data_dir + mod->base_name + DOT + EXT_ESM).c_str(),
+                (data_dir + new_base_name + DOT + EXT_ESM).c_str());
+    }
+
+    // PLAIN BSA
+    if (std::filesystem::exists(data_dir + mod->base_name + DOT + EXT_BSA)) {
+        rename((data_dir + mod->base_name + DOT + EXT_BSA).c_str(),
+                (data_dir + new_base_name + DOT + EXT_BSA).c_str());
+    }
+
+    std::vector<std::string> new_bsa_suffixes;
+
+    // ALL SUFFIXED BSA's
+    for (auto &suffix : mod->bsa_suffixes) {
+
+        // exclude empty suffix, already covered
+        if (suffix.empty()) {
+            new_bsa_suffixes.emplace_back(SUFFIX_NONE);
+            continue;
+        }
+
+        // if is long suffix, change it to short suffix while renaming
+        if (LONG_SUFFIXES.count(suffix)) {
+            new_bsa_suffixes.emplace_back(LONG_TO_SHORT_SUFFIXES.at(suffix));
+            rename((data_dir + mod->base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str(),
+                    (data_dir + new_base_name + SP + DASH + SP + LONG_TO_SHORT_SUFFIXES.at(suffix)
+                        + DOT + EXT_BSA).c_str());
+            continue;
+
+        } else { // else, it's either a short suffix or unknown. we leave it alone
+            new_bsa_suffixes.emplace_back(suffix);
+            rename((data_dir + mod->base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str(),
+                    (data_dir + new_base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str());
+        }
+    }
+
+    // re-construct mod->enabled_bsas with shortened suffixes
+    // TODO: side-note: why is it a map anyway? there's no reason it can't be a hashtable
+    // also: find out wtf 1 and 2 really means in enabled_bsas. why not 0 and 1?
+    std::map<std::string, int> new_enabled_bsas;
+    for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
+        if (LONG_SUFFIXES.count(suffix_pair.first)) {
+            new_enabled_bsas.insert(std::pair(LONG_TO_SHORT_SUFFIXES.at(suffix_pair.first), suffix_pair.second));
+        } else {
+            new_enabled_bsas.insert(std::pair(suffix_pair.first, suffix_pair.second));
+        }
+    }
+
+    // lastly, reflect the base_name change in SkyrimMod
+    mod->base_name = new_base_name;
+    mod->bsa_suffixes = new_bsa_suffixes;
+    mod->enabled_bsas = new_enabled_bsas;
+}
+
+void massRenameMods() {
+    // randomly generate base_names for each mod. prevents conflicts when renaming.
+    std::unordered_map<std::string, std::string> tmpname_to_basename;
+    NameGenerator name_generator = NameGenerator();
+
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+
+        g_status_msg = "DO NOT CLOSE: Renaming mod '" + mod->base_name + "' ...";
+        redrawFooter();
+        consoleUpdate(NULL);
+
+        // get randomized temp name
+        std::string tmp_name_str = NameGenerator::generateRandomAlphaString(20);
+
+        // store original base_name, and remember which random name it was assigned
+        std::string original_base = mod->base_name;
+        tmpname_to_basename[tmp_name_str] = mod->base_name;
+
+        // change all associated files to temp name
+        renameModFiles(mod, tmp_name_str);
+
+        // generate next shortest name
+        std::string new_name = name_generator.generateNext();
+        
+        // rename to the newly generated shortname
+        renameModFiles(mod, new_name);
+
+        // if it had an old alias, update the base_name only and keep old alias
+        // else, set old base_name as an alias of the newly generated name
+        if (AliasManager::getInstance()->hasAlias(original_base)) {
+            AliasManager::getInstance()->updateBaseName(original_base, new_name);
+        } else {
+            AliasManager::getInstance()->setAlias(new_name, original_base);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     consoleInit(NULL);
 
@@ -545,6 +653,7 @@ int main(int argc, char **argv) {
                 g_tmp_status = true;
                 mass_renaming_second_warned = true;
                 redrawFooter();
+            // final warning, different button combination needed to progress
             } else if (!mass_renaming_final_warned) {
                 g_status_msg = "FINAL: Make sure you have backups. (RStick + LStick) to start.";
                 g_tmp_status = true;
@@ -556,10 +665,25 @@ int main(int argc, char **argv) {
         if ((kDown & HidNpadButton_StickR) 
             && (kDown & HidNpadButton_StickL)) {
             if (mass_renaming_final_warned) {
-                //massRenameMods();
-                clearTempEffects();
-                g_status_msg = "Modfiles successfully renamed and aliases auto-assigned.";
-                redrawFooter();
+                if (getGlobalModList().empty()) {
+                    clearTempEffects();
+                    g_status_msg = "No Mods were detected. Renaming process halted.";
+                    redrawFooter();
+                } else {
+                    // mass rename and auto alias generation
+                    massRenameMods();
+
+                    // rewrite plugins and inis
+                    writePluginsFile();
+                    writeIniChanges();
+
+                    // redraw lists
+                    gui.redraw();
+
+                    clearTempEffects();
+                    g_status_msg = "ALl Modfiles successfully renamed and aliases auto-assigned.";
+                    redrawFooter();
+                }
             }
         }
 
