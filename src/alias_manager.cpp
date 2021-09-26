@@ -14,7 +14,7 @@ AliasManager* AliasManager::get_instance() {
 }
 
 bool AliasManager::has_alias(std::string filename) {
-    return this->filename_to_alias_mapping.find(filename) == this->filename_to_alias_mapping.end();
+    return this->filename_to_alias_mapping.find(filename) != this->filename_to_alias_mapping.end();
 }
 
 std::string AliasManager::get_alias(std::string filename) {
