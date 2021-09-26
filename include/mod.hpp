@@ -28,17 +28,45 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #define EXT_ESP "esp"
 #define EXT_ESM "esm"
 #define EXT_BSA "bsa"
 
+#define SUFFIX_ANIMATIONS_LONG "Animations"
+#define SUFFIX_MESHES_LONG "Meshes"
+#define SUFFIX_SOUNDS_LONG "Sounds"
+#define SUFFIX_TEXTURES_LONG "Textures"
+#define SUFFIX_VOICES_LONG "Voices"
+
 #define SUFFIX_ANIMATIONS "A"
 #define SUFFIX_MESHES "M"
+#define SUFFIX_NONE ""
 #define SUFFIX_SOUNDS "S"
 #define SUFFIX_TEXTURES "T"
 #define SUFFIX_VOICES "V"
+
+static const std::unordered_set<std::string> LONG_SUFFIXES = {
+    SUFFIX_ANIMATIONS_LONG, SUFFIX_MESHES_LONG,
+    SUFFIX_SOUNDS_LONG, SUFFIX_TEXTURES_LONG,
+    SUFFIX_VOICES_LONG,
+};
+
+static const std::unordered_set<std::string> SHORT_SUFFIXES = {
+    SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS,
+    SUFFIX_TEXTURES, SUFFIX_VOICES
+};
+
+static const std::unordered_map<std::string, std::string> LONG_TO_SHORT_SUFFIXES = {
+    {SUFFIX_ANIMATIONS_LONG, SUFFIX_ANIMATIONS},
+    {SUFFIX_MESHES_LONG, SUFFIX_MESHES},
+    {SUFFIX_SOUNDS_LONG, SUFFIX_SOUNDS},
+    {SUFFIX_TEXTURES_LONG, SUFFIX_TEXTURES},
+    {SUFFIX_VOICES_LONG, SUFFIX_VOICES}
+};
 
 enum class ModStatus {
     ENABLED,
@@ -62,7 +90,7 @@ struct ModFile {
 };
 
 struct SkyrimMod {
-    const std::string base_name;
+    std::string base_name;
     bool has_esp;
     bool is_master;
     bool esp_enabled;
