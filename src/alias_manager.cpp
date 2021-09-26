@@ -6,23 +6,23 @@ AliasManager::AliasManager() {
     parser = AliasManager::AliasParser();
 }
 
-AliasManager* AliasManager::get_instance() {
+AliasManager* AliasManager::getInstance() {
     if (!instance) {
         instance = new AliasManager();
     }
     return instance;
 }
 
-bool AliasManager::has_alias(std::string filename) {
+bool AliasManager::hasAlias(std::string filename) {
     return this->filename_to_alias_mapping.find(filename) != this->filename_to_alias_mapping.end();
 }
 
-std::string AliasManager::get_alias(std::string filename) {
-    return has_alias(filename) ? filename_to_alias_mapping.at(filename)
+std::string AliasManager::getAlias(std::string filename) {
+    return hasAlias(filename) ? filename_to_alias_mapping.at(filename)
                                     : std::string();
 }
 
-void AliasManager::set_alias(std::string filename, std::string alias) {
+void AliasManager::setAlias(std::string filename, std::string alias) {
     // programmer error, empty base_name passed in
     if (filename.empty()) {
         return;
@@ -30,35 +30,35 @@ void AliasManager::set_alias(std::string filename, std::string alias) {
 
     // remove alias
     if (alias.empty()) {
-        remove_alias(filename);
+        this->removeAlias(filename);
         return;
     }
 
     // alias remains the same
-    if (this->has_alias(filename) 
+    if (this->hasAlias(filename) 
         && this->filename_to_alias_mapping.at(filename) == alias) {
         return;
     }
 
     // otherwise, change the alias and rewrite saved txt file
     filename_to_alias_mapping[filename] = alias;
-    this->save_alias_list_to_disk();
+    this->saveAliasListToDisk();
 }
 
-void AliasManager::remove_alias(std::string filename) {
-    if (has_alias(filename)) {
+void AliasManager::removeAlias(std::string filename) {
+    if (this->hasAlias(filename)) {
         this->filename_to_alias_mapping.erase(filename);
     }
 }
 
-void AliasManager::load_saved_alias(std::string filepath) {
+void AliasManager::loadSavedAlias(std::string filepath) {
     // maybe print relevant message if loading fails
     if (!this->filename_to_alias_mapping.empty()) {
         this->filename_to_alias_mapping.clear();
     }
 
     std::string saved_text;
-    saved_text = FileHelper::get_file_as_string(filepath);
+    saved_text = FileHelper::getFileAsString(filepath);
     if (!saved_text.empty()) {
         this->parser.parse(saved_text);
     }
@@ -87,17 +87,17 @@ void AliasManager::AliasParser::parse(std::string text) {
             }
         }
 
-        AliasManager::get_instance()->set_alias(mod_name, alias);
+        AliasManager::getInstance()->setAlias(mod_name, alias);
     }
 }
 
-void AliasManager::save_alias_list_to_disk(std::string dest) {
+void AliasManager::saveAliasListToDisk(std::string dest) {
     // maybe print relevant console message if saving fails
-    std::string plaintext = this->parser.convert_to_text(this->filename_to_alias_mapping);
-    FileHelper::save_string_to_file(dest, plaintext);
+    std::string plaintext = this->parser.convertToText(this->filename_to_alias_mapping);
+    FileHelper::saveStringToFile(dest, plaintext);
 }
 
-std::string AliasManager::AliasParser::convert_to_text(std::unordered_map<std::string, std::string> &alias_list) {
+std::string AliasManager::AliasParser::convertToText(std::unordered_map<std::string, std::string> &alias_list) {
     if (alias_list.empty()) {
         return std::string();
     }

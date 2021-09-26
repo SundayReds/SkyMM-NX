@@ -1,6 +1,6 @@
 #include "file_helper.hpp"
 
-std::string FileHelper::get_file_as_string(std::string filepath) {
+std::string FileHelper::getFileAsString(std::string filepath) {
     std::ifstream t(filepath);
 
     if (t) {
@@ -13,7 +13,7 @@ std::string FileHelper::get_file_as_string(std::string filepath) {
     return std::string();
 }
 
-void FileHelper::save_string_to_file(std::string dest, std::string text) {
+void FileHelper::saveStringToFile(std::string dest, std::string text) {
     std::ofstream t(dest);
     t << text;
     t.close();

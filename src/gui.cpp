@@ -132,10 +132,10 @@ void ModGui::redrawRow(size_t gui_y) {
     printf(cur_mod->base_name.c_str());
 
     // display alias in brackets if present
-    if (AliasManager::get_instance()->has_alias(cur_mod->base_name)) {
+    if (AliasManager::getInstance()->hasAlias(cur_mod->base_name)) {
         CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
         printf((" (" 
-                + AliasManager::get_instance()->get_alias(cur_mod->base_name) 
+                + AliasManager::getInstance()->getAlias(cur_mod->base_name) 
                 + ")")
                 .c_str());
     }

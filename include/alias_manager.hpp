@@ -17,14 +17,14 @@
 class AliasManager {
 
 public:
-    static AliasManager *get_instance();
+    static AliasManager *getInstance();
 
-    bool has_alias(std::string filename);
-    std::string get_alias(std::string filename);
-    void set_alias(std::string filename, std::string alias);
-    void remove_alias(std::string filename);
-    void load_saved_alias(std::string filepath=SKYMM_NX_ALIAS_TXT_FILE);
-    void save_alias_list_to_disk(std::string dest=SKYMM_NX_ALIAS_TXT_FILE);
+    bool hasAlias(std::string filename);
+    std::string getAlias(std::string filename);
+    void setAlias(std::string filename, std::string alias);
+    void removeAlias(std::string filename);
+    void loadSavedAlias(std::string filepath=SKYMM_NX_ALIAS_TXT_FILE);
+    void saveAliasListToDisk(std::string dest=SKYMM_NX_ALIAS_TXT_FILE);
     
 
 private:
@@ -36,7 +36,7 @@ private:
     class AliasParser {
     public:
         void parse(std::string text);
-        std::string convert_to_text(std::unordered_map<std::string, std::string> &alias_list);
+        std::string convertToText(std::unordered_map<std::string, std::string> &alias_list);
     };
 
     AliasParser parser;

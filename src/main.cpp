@@ -221,7 +221,7 @@ int initialize(void) {
     printf("Attempting to retrieve mod aliases, if any...\n");
 
     // load alias file
-    AliasManager::get_instance()->load_saved_alias(SKYMM_NX_ALIAS_TXT_FILE);
+    AliasManager::getInstance()->loadSavedAlias(SKYMM_NX_ALIAS_TXT_FILE);
 
     printf("Discovering available mods...\n");
 
@@ -496,27 +496,33 @@ int main(int argc, char **argv) {
         if (kDown & HidNpadButton_X) {
             //find out which mod was selected
             std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+            bool currently_has_alias = AliasManager::getInstance()->hasAlias(mod->base_name);
             //bring up keyboard and capture input
-            std::string retstr = Keyboard::show("Enter new alias for '" 
+            std::string retstr = Keyboard::show("Enter new alias for '" // title
                                                     + mod->base_name
-                                                    + ((AliasManager::get_instance()->has_alias(mod->base_name)) 
-                                                                ? " (" + 
-                                                                    AliasManager::get_instance()->get_alias(mod->base_name) 
+                                                    + ((currently_has_alias) ? " (" + 
+                                                                    AliasManager::getInstance()
+                                                                                ->getAlias(mod->base_name) 
                                                                     + ")'"
                                                                 : "'"),
-                                                                
+                                                // guide text                
                                                 "New Alias (MAX: " 
                                                 + std::to_string(MAX_INPUT_LENGTH) 
-                                                + " characters)");
+                                                + " characters)",
+                                                // initial starting text
+                                                (currently_has_alias) ? AliasManager::getInstance()
+                                                                        ->getAlias(mod->base_name)
+                                                                : std::string());
 
             //save alias
-            AliasManager::get_instance()->set_alias(mod->base_name, retstr);
+            AliasManager::getInstance()->setAlias(mod->base_name, retstr);
 
             //push updates to display
             gui.redrawCurrentRow();
             g_status_msg = (retstr.empty())? "Alias successfully removed."
                                                 : "Alias successfully set.";
             redrawFooter();
+            clearTempEffects();
         }
 
         consoleUpdate(NULL);
