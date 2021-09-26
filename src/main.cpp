@@ -23,10 +23,12 @@
  * THE SOFTWARE.
  */
 
+#include "alias_manager.hpp"
 #include "console_helper.hpp"
 #include "error_defs.hpp"
 #include "gui.hpp"
 #include "ini_helper.hpp"
+#include "keyboard_helper.hpp"
 #include "mod.hpp"
 #include "path_helper.hpp"
 #include "string_helper.hpp"
@@ -216,6 +218,11 @@ int initialize(void) {
     CONSOLE_SET_POS(0, 0);
     CONSOLE_CLEAR_SCREEN();
     CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
+    printf("Attempting to retrieve mod aliases, if any...\n");
+
+    // load alias file
+    AliasManager::get_instance()->load_saved_alias(SKYMM_NX_ALIAS_TXT_FILE);
+
     printf("Discovering available mods...\n");
 
     if (RC_FAILURE(rc = discoverMods())) {
@@ -270,6 +277,9 @@ static void redrawHeader(void) {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
+    // make it clear that this is a modified version
+    // in case anyone somehow downloads this by accident before
+    // i private the repo or update README
     printf(", modified by SundayReds");
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_MOVE_LEFT(255);
@@ -309,7 +319,7 @@ static void redrawFooter() {
     printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_MOVE_DOWN(1);
-    printf("(-) Save Changes    |  (+) Exit");
+    printf("(-) Save Changes    |  (+) Exit        |  (X) Set Alias");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
@@ -480,6 +490,32 @@ int main(int argc, char **argv) {
 
             g_status_msg = "Wrote changes to SDMC!";
             g_tmp_status = true;
+            redrawFooter();
+        }
+
+        if (kDown & HidNpadButton_X) {
+            //find out which mod was selected
+            std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+            //bring up keyboard and capture input
+            std::string retstr = Keyboard::show("Enter new alias for '" 
+                                                    + mod->base_name
+                                                    + ((AliasManager::get_instance()->has_alias(mod->base_name)) 
+                                                                ? " (" + 
+                                                                    AliasManager::get_instance()->get_alias(mod->base_name) 
+                                                                    + ")'"
+                                                                : "'"),
+                                                                
+                                                "New Alias (MAX: " 
+                                                + std::to_string(MAX_INPUT_LENGTH) 
+                                                + " characters)");
+
+            //save alias
+            AliasManager::get_instance()->set_alias(mod->base_name, retstr);
+
+            //push updates to display
+            gui.redrawCurrentRow();
+            g_status_msg = (retstr.empty())? "Alias successfully removed."
+                                                : "Alias successfully set.";
             redrawFooter();
         }
 
