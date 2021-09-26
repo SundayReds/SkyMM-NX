@@ -58,7 +58,7 @@ void AliasManager::load_saved_alias(std::string filepath) {
     }
 
     std::string saved_text;
-    saved_text = file_helper::get_file_as_string(filepath);
+    saved_text = FileHelper::get_file_as_string(filepath);
     if (!saved_text.empty()) {
         this->parser.parse(saved_text);
     }
@@ -94,7 +94,7 @@ void AliasManager::AliasParser::parse(std::string text) {
 void AliasManager::save_alias_list_to_disk(std::string dest) {
     // maybe print relevant console message if saving fails
     std::string plaintext = this->parser.convert_to_text(this->filename_to_alias_mapping);
-    file_helper::save_string_to_file(dest, plaintext);
+    FileHelper::save_string_to_file(dest, plaintext);
 }
 
 std::string AliasManager::AliasParser::convert_to_text(std::unordered_map<std::string, std::string> &alias_list) {
