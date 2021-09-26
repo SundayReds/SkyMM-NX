@@ -36,7 +36,7 @@
 #include <fstream>
 #include <memory>
 
-static const std::vector<std::string> g_archive_types_1 = {"", SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS};
+static const std::vector<std::string> g_archive_types_1 = {SUFFIX_NONE, SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS};
 static const std::vector<std::string> g_archive_types_2 = {SUFFIX_TEXTURES, SUFFIX_VOICES};
 static const std::vector<std::string> g_archive_types_3 = {SUFFIX_ANIMATIONS};
 
