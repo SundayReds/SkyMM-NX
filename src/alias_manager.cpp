@@ -46,8 +46,21 @@ void AliasManager::setAlias(std::string filename, std::string alias) {
 }
 
 void AliasManager::removeAlias(std::string filename) {
+    if (filename.empty()) {
+        return;
+    }
+
     if (this->hasAlias(filename)) {
         this->filename_to_alias_mapping.erase(filename);
+    }
+}
+
+void AliasManager::updateBaseName(std::string old_base_name, std::string new_base_name) {
+    std::string alias = this->getAlias(old_base_name);
+
+    if (!alias.empty()) {
+        this->removeAlias(old_base_name);
+        this->setAlias(new_base_name, alias);
     }
 }
 

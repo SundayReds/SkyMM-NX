@@ -23,6 +23,7 @@ public:
     std::string getAlias(std::string filename);
     void setAlias(std::string filename, std::string alias);
     void removeAlias(std::string filename);
+    void updateBaseName(std::string old_base_name, std::string new_base_name);
     void loadSavedAlias(std::string filepath=SKYMM_NX_ALIAS_TXT_FILE);
     void saveAliasListToDisk(std::string dest=SKYMM_NX_ALIAS_TXT_FILE);
     
