@@ -6,6 +6,8 @@
 
 class NameGenerator {
 public:
+    static std::string generateRandomAlphaString(size_t len);
+
     std::string generateNext();
 
 private:

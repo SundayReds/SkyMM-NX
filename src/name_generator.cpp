@@ -9,12 +9,12 @@ std::string NameGenerator::generateNext() {
     std::string name;
 
     if (this->number_generated < alphabet.size()) {
-        name = this->alphabet.at(this->number_generated);
+        name = alphabet.at(this->number_generated);
     } else {
         int temp = this->number_generated - 1;
         while (temp != 0) {
             temp--;
-            name += this->alphabet.at((temp)% alphabet.size());
+            name += alphabet.at((temp)% alphabet.size());
             temp /= 26;
         }
         reverse(name.begin(), name.end());
@@ -22,4 +22,16 @@ std::string NameGenerator::generateNext() {
 
     this->number_generated++;
     return name;
+}
+
+std::string NameGenerator::generateRandomAlphaString(size_t len) {
+    std::string ret;
+    ret.reserve(len);
+
+    for (unsigned long i = 0; i < len; i ++) {
+        unsigned long random_idx = rand() % (alphabet.size());
+        ret += alphabet.at(random_idx);
+    }
+
+    return ret;
 }
