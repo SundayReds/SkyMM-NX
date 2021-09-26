@@ -10,14 +10,18 @@ for pure replacement mods (lacking an ESP) will not be preserved when the respec
 When the save function is invoked, the INI and `Plugins` files will be modified accordingly and saved to the SD card.
 
 ### Changes Made To Original Work
-1. Change all suffixes to be single letter only. 
-- For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
+1. Changed all suffixes to be single letter only. 
+    - For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
+    - The `Skyrim.ini` file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes scheme on NexusMods (I hit it around 16 mods, even with succinct base modnames).
+    - This change hence aims to remove all of that unnecessary character bloat from the `skyrim.ini` configuration file so that more mods can be loaded.
 
-- The skyrim.ini file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes scheme on NexusMods (I hit it around 16 mods, even with succinct base modnames).
+2. Added a feature to give each mod an in-app alias. Pressing `X` while hovering over a mod prompts user to add an alias to the mod, which will then be saved to disk and then loaded up the next time. Entering an empty alias will delete the current alias, if any, associated with the selected mod. The aliases will be saved in a human-readable format in `skymm-alias.txt` within the same folder. which the user can opt to edit directly instead of going through the app.
+    - eg. Mod `A` as displayed in-app can now be given the alias `Crossbows of Skyrim`, which will display in-app as `A (Crossbows of Skyrim)`. The alias will be saved in a human-readable format in `skymm-alias.txt` within the same folder. The user can opt to edit the `.txt` directly.
+    - Allows user to shorten base names of mods as much as they want without runnning the risk 
 
-- This change hence aims to remove all of that unnecessary character bloat from the `skyrim.ini` configuration file so that more mods can be loaded.
+3. Small fix to suffix checking for Animations.
 
-2. Very small under-the-hood fixes
+The main application was not made by me. All credit for that goes to [caseif](https://github.com/caseif/SkyMM-NX).
 
 ### Naming Scheme (updated)
 
@@ -41,8 +45,11 @@ Currently, the app requires that all mods follow a standard naming scheme:
 
 ### To-do
 
-- Add ability to 'nickname' or give aliases to mods in-app or on PC via a `.txt` so that it's easier to identify truncated modnames (so that you don't come back to the game after 5 years and start wondering what `E.esp` does)
-- Add a python or bash script to automatically to automatically detect and truncate all suffixes in a folder
+* COMPLETED - <strike> Add ability to 'nickname' or give aliases to mods in-app or on PC via a `.txt` so that it's easier to identify truncated modnames (so that you don't come back to the game after 5 years and start wondering what `E.esp` does) </strike>
+* Add an in-app function to rename all `.bsa` and `.esp` files in the `Data/` folder to short names like `a.esp`, then automatically generating aliases for all renamed mods that did not previously have an alias, based on their original filename
+    - eg 1. `Mod1` will be become `A (Mod1)` in-app, and its associated `.esp` file will be renamed from `Mod1.esp` to `A.esp` (along with its other files)
+    - eg 2. `Mod2 (Aho Project)` will become `B (Aho Project)` in-app (no change to alias since it already has one), and its associated `.esp` file will be renamed from `Mod2.esp` to `B.esp` (along with its other files)
+* Fix/Tweak `.ini` writing. According to the author of Skyrim-NX-Toolkit, textures and voices `.bsa` files are supposed to go under `sResourceArchiveList2=` in `Skyrim.ini` instead of `sArchiveToLoadInMemoryList=`. The current app just adds them all under the latter, but for some reason still works perfectly fine. Even so, by distributing the `.bsa` files as per the Skyrim-NX-Toolkit method, we can reduce more bloat from the `sArchiveToLoadInMemoryList=`, which should prevent us from hitting the 1024 limit earlier.
 
 ### Building
 
