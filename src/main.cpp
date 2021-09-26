@@ -66,6 +66,9 @@ static HidNpadButton g_key_edit_lo = HidNpadButton_Y;
 
 static bool g_dirty = false;
 static bool g_dirty_warned = false;
+static bool mass_renaming_first_warned = false;
+static bool mass_renaming_second_warned = false;
+static bool mass_renaming_final_warned = false;
 
 static std::string g_status_msg = "";
 static bool g_tmp_status = false;
@@ -325,6 +328,9 @@ static void redrawFooter() {
 
 static void clearTempEffects(void) {
     g_dirty_warned = false;
+    mass_renaming_final_warned = false;
+    mass_renaming_second_warned = false;
+    mass_renaming_final_warned = false;
 
     if (g_tmp_status) {
         g_status_msg = "";
@@ -523,6 +529,38 @@ int main(int argc, char **argv) {
                                                 : "Alias successfully set.";
             redrawFooter();
             clearTempEffects();
+        }
+
+        if ((kDown & HidNpadButton_R) 
+            && (kDown & HidNpadButton_L)) {
+            // first warning
+            if (!mass_renaming_first_warned) {
+                g_status_msg = "WARNING: Will rename modfiles and auto assign alias. (R + L) to cont.";
+                g_tmp_status = true;
+                mass_renaming_first_warned = true;
+                redrawFooter();
+            // second warning
+            } else if (!mass_renaming_second_warned) {
+                g_status_msg = "WARNING: Renaming modfiles can affect current saves. (R + L) to cont.";
+                g_tmp_status = true;
+                mass_renaming_second_warned = true;
+                redrawFooter();
+            } else if (!mass_renaming_final_warned) {
+                g_status_msg = "FINAL: Make sure you have backups. (RStick + LStick) to start.";
+                g_tmp_status = true;
+                mass_renaming_final_warned = true;
+                redrawFooter();
+            }
+        }
+
+        if ((kDown & HidNpadButton_StickR) 
+            && (kDown & HidNpadButton_StickL)) {
+            if (mass_renaming_final_warned) {
+                //massRenameMods();
+                clearTempEffects();
+                g_status_msg = "Modfiles successfully renamed and aliases auto-assigned.";
+                redrawFooter();
+            }
         }
 
         consoleUpdate(NULL);
