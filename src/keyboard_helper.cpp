@@ -1,6 +1,7 @@
 #include "keyboard_helper.hpp"
 
-std::string Keyboard::show(std::string title, 
+Result Keyboard::show(std::string &output_str,
+                            std::string title, 
                             std::string guide_msg, 
                             std::string initial_string) {
     Result rc = 0;
@@ -17,9 +18,18 @@ std::string Keyboard::show(std::string title,
         rc = swkbdShow(&kbd, tmpoutstr, sizeof(tmpoutstr));
         swkbdClose(&kbd);
 
-        return R_SUCCEEDED(rc) ? std::string(tmpoutstr)
+        output_str = R_SUCCEEDED(rc) ? std::string(tmpoutstr)
                                 : std::string();
     }
 
-    return std::string();
+    return rc;
 }
+
+std::string Keyboard::show(std::string title, 
+                            std::string guide_msg, 
+                            std::string initial_string) {
+    std::string output_str;
+    Keyboard::show(output_str, title, guide_msg, initial_string);
+    return output_str;
+}
+
