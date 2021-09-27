@@ -36,9 +36,11 @@
 #include <fstream>
 #include <memory>
 
-static const std::vector<std::string> g_archive_types_1 = {"", SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS};
-static const std::vector<std::string> g_archive_types_2 = {SUFFIX_TEXTURES, SUFFIX_VOICES};
-static const std::vector<std::string> g_archive_types_3 = {SUFFIX_ANIMATIONS};
+static const std::vector<std::string> g_archive_types_1 = {SUFFIX_NONE, SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS,
+                                                            SUFFIX_ANIMATIONS_LONG, SUFFIX_MESHES_LONG, SUFFIX_SOUNDS_LONG};
+static const std::vector<std::string> g_archive_types_2 = {SUFFIX_TEXTURES, SUFFIX_VOICES, 
+                                                            SUFFIX_TEXTURES_LONG, SUFFIX_VOICES_LONG};
+static const std::vector<std::string> g_archive_types_3 = {SUFFIX_ANIMATIONS, SUFFIX_ANIMATIONS_LONG};
 
 static StdIni g_skyrim_ini;
 static StdIni g_skyrim_lang_ini;

@@ -34,8 +34,15 @@
 #define EXT_ESM "esm"
 #define EXT_BSA "bsa"
 
+#define SUFFIX_ANIMATIONS_LONG "Animations"
+#define SUFFIX_MESHES_LONG "Meshes"
+#define SUFFIX_SOUNDS_LONG "Sounds"
+#define SUFFIX_TEXTURES_LONG "Textures"
+#define SUFFIX_VOICES_LONG "Voices"
+
 #define SUFFIX_ANIMATIONS "A"
 #define SUFFIX_MESHES "M"
+#define SUFFIX_NONE ""
 #define SUFFIX_SOUNDS "S"
 #define SUFFIX_TEXTURES "T"
 #define SUFFIX_VOICES "V"
