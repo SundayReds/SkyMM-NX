@@ -11,20 +11,22 @@ When the save function is invoked, the INI and `Plugins` files will be modified 
 
 ### Changes Made To Original Work
 1. Changed all suffixes to be single letter only. 
-    - For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
-    - The `Skyrim.ini` file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes scheme on NexusMods (I hit it around 16 mods, even with succinct base modnames).
-    - This change hence aims to remove all of that unnecessary character bloat from the `skyrim.ini` configuration file so that more mods can be loaded.
+- For example, `EnaiRim - Textures` should now be formatted as `EnaiRim - T`.
+- The `Skyrim.ini` file has a line limit of 1024 characters, which can be hit very quickly if we use the lengthy original suffixes scheme on NexusMods (I hit it around 16 mods, even with succinct base modnames).
+- This change hence aims to remove all of that unnecessary character bloat from the `skyrim.ini` configuration file so that more mods can be loaded.
 
 2. Added a feature to give each mod an in-app alias. Pressing `X` while hovering over a mod prompts user to add an alias to the mod, which will then be saved to disk and then loaded up the next time. Entering an empty alias will delete the current alias, if any, associated with the selected mod. The aliases will be saved in a human-readable format in `skymm-alias.txt` within the same folder. which the user can opt to edit directly instead of going through the app.
-    - eg. Mod `A` as displayed in-app can now be given the alias `Crossbows of Skyrim`, which will display in-app as `A (Crossbows of Skyrim)`. The alias will be saved in a human-readable format in `skymm-alias.txt` within the same folder. The user can opt to edit the `.txt` directly.
-    - Allows user to shorten base names of mods as much as they want without runnning the risk 
+- eg. Mod `A` as displayed in-app can now be given the alias `Crossbows of Skyrim`, which will display in-app as `A (Crossbows of Skyrim)`. The alias will be saved in a human-readable format in `skymm-alias.txt` within the same folder. The user can opt to edit the `.txt` directly.
+- Allows user to shorten base names of mods as much as they want without runnning the risk 
 
 3. Added a feature to auto-generate shortened forms of all mod filenames with auto-shortened suffixes, then give them an in-app alias so that the user can identify them. 
-    - This will auto rename all modfiles as per the naming scheme defined below. eg. `Proper Crossbow Integration.esp` and `Proper Crossbow Integration - Textures.bsa` will be auto-renamed to something like `a.esp` and `a - T.bsa`. It will then be displayed in-app as: `a (Proper Crossbow Integration)`. ie. mod `a` with alias of `Proper Crossbow Integration`
-    - If the mod had no alias prior to auto-renaming, its original filename will become its alias. Otherwise, it will retain whatever alias you chose to give it before activating the mass renaming function.
-    - NOTE: Although this helps you with everything else, you still need to make sure all modfiles belonging to a single mod have the same base_name (See naming conventions below). Some mod authors don't enforce this in their uploads for some reason.
-    - NOTE: Some mod authors hard-code their filenames, which means that changing the names of files will break them. This generally is bad practice and most good modders avoid it, but there are some authors who still do this anyway. There is no way of telling whether or not a mod contains hardcoded file links, so if one of your mods break after renaming, you might want to try renaming it back to their original names
-    - IMPORTANT: backup your mods, `Skyrim.ini`, `Skyrim_en.ini`, and `Plugins` before attempting to use this function (plus it's generally good practice anyway). This function works but has not been rigorously tested.
+- This will auto rename all modfiles as per the naming scheme defined below. 
+   - eg. `Proper Crossbow Integration.esp` and `Proper Crossbow Integration - Textures.bsa` will be auto-renamed to something like `a.esp` and `a - T.bsa`. 
+   - It will then be displayed in-app as: `a (Proper Crossbow Integration)`. ie. mod `a` with auto-generated alias of `Proper Crossbow Integration`
+- If the mod had no alias prior to auto-renaming, its original filename will become its alias. Otherwise, it will retain whatever alias you chose to give it before activating the mass renaming function.
+- NOTE: Although this helps you with everything else, you still need to make sure all modfiles belonging to a single mod have the same base_name (See naming conventions below). Some mod authors don't enforce this in their uploads for some reason.
+- NOTE: Some mod authors hard-code their filenames, which means that changing the names of files will break them. This generally is bad practice and most good modders avoid it, but there are some authors who still do this anyway. There is no way of telling whether or not a mod contains hardcoded file links, so if one of your mods break after renaming, you might want to try renaming it back to their original names
+- IMPORTANT: backup your mods, `Skyrim.ini`, `Skyrim_en.ini`, and `Plugins` before attempting to use this function (plus it's generally good practice anyway). This function works but has not been rigorously tested.
 
 
 4. Small fix to suffix checking for Animations.
