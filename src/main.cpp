@@ -325,7 +325,7 @@ static void redrawFooter() {
     printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_MOVE_DOWN(1);
-    printf("(-) Save Changes    |  (+) Exit        |  (X) Set Alias");
+    printf("(-) Save Changes | (X) Set Alias | (R+L) Auto-rename ALL | (+) Exit ");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
@@ -436,7 +436,7 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
     mod->enabled_bsas = new_enabled_bsas;
 }
 
-void massRenameMods() {
+void massAutoRenameMods() {
     // randomly generate base_names for each mod. prevents conflicts when renaming.
     std::unordered_map<std::string, std::string> tmpname_to_basename;
     NameGenerator name_generator = NameGenerator();
@@ -639,12 +639,12 @@ int main(int argc, char **argv) {
             clearTempEffects();
         }
 
-        // warnings for mass-renaming function
+        // warnings for mass-auto-renaming function
         if ((kDown & HidNpadButton_R) 
             && (kDown & HidNpadButton_L)) {
             // first warning
             if (!mass_renaming_first_warned) {
-                g_status_msg = "WARNING: Will rename modfiles and auto assign alias. (R + L) to cont.";
+                g_status_msg = "WARNING: Will auto-rename ALL modfiles and auto assign alias. (R + L) to cont.";
                 g_tmp_status = true;
                 mass_renaming_first_warned = true;
                 redrawFooter();
@@ -663,17 +663,17 @@ int main(int argc, char **argv) {
             }
         }
 
-        // execute mass renaming function
+        // execute mass auto renaming function
         if ((kDown & HidNpadButton_StickR) 
             && (kDown & HidNpadButton_StickL)) {
             if (mass_renaming_final_warned) {
                 if (getGlobalModList().empty()) {
                     clearTempEffects();
-                    g_status_msg = "No Mods were detected. Renaming process halted.";
+                    g_status_msg = "No Mods were detected. Auto-renaming process halted.";
                     redrawFooter();
                 } else {
                     // mass rename and auto alias generation
-                    massRenameMods();
+                    massAutoRenameMods();
 
                     // rewrite plugins and inis
                     writePluginsFile();
@@ -683,7 +683,7 @@ int main(int argc, char **argv) {
                     gui.redraw();
 
                     clearTempEffects();
-                    g_status_msg = "ALl Modfiles successfully renamed and aliases auto-assigned.";
+                    g_status_msg = "ALl Modfiles successfully auto-renamed and aliases auto-assigned.";
                     redrawFooter();
                 }
             }
