@@ -451,14 +451,22 @@ void massAutoRenameMods() {
         std::string tmp_name_str = NameGenerator::generateRandomAlphaString(20);
 
         // store original base_name, and remember which random name it was assigned
-        std::string original_base = mod->base_name;
         tmpname_to_basename[tmp_name_str] = mod->base_name;
 
         // change all associated files to temp name
         renameModFiles(mod, tmp_name_str);
+    }
+
+    // start renaming them to shortened names
+    // at this point they all have randomized names, so
+    // astronomically low chance of conflict.
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
 
         // generate next shortest name
         std::string new_name = name_generator.generateNext();
+
+        // retrieve the original name of this mod
+        std::string original_base = tmpname_to_basename.at(mod->base_name);
         
         // rename to the newly generated shortname
         renameModFiles(mod, new_name);
