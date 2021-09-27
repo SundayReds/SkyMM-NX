@@ -331,7 +331,7 @@ static void redrawFooter() {
 
 static void clearTempEffects(void) {
     g_dirty_warned = false;
-    mass_renaming_final_warned = false;
+    mass_renaming_first_warned = false;
     mass_renaming_second_warned = false;
     mass_renaming_final_warned = false;
 
@@ -639,6 +639,7 @@ int main(int argc, char **argv) {
             clearTempEffects();
         }
 
+        // warnings for mass-renaming function
         if ((kDown & HidNpadButton_R) 
             && (kDown & HidNpadButton_L)) {
             // first warning
@@ -662,6 +663,7 @@ int main(int argc, char **argv) {
             }
         }
 
+        // execute mass renaming function
         if ((kDown & HidNpadButton_StickR) 
             && (kDown & HidNpadButton_StickL)) {
             if (mass_renaming_final_warned) {
