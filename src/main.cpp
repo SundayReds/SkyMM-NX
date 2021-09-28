@@ -419,8 +419,6 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
     }
 
     // re-construct mod->enabled_bsas with shortened suffixes
-    // TODO: side-note: why is it a map anyway? there's no reason it can't be a hashtable
-    // also: find out wtf 1 and 2 really means in enabled_bsas. why not 0 and 1?
     std::map<std::string, int> new_enabled_bsas;
     for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
         if (LONG_SUFFIXES.count(suffix_pair.first)) {
