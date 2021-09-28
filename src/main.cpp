@@ -23,11 +23,14 @@
  * THE SOFTWARE.
  */
 
+#include "alias_manager.hpp"
 #include "console_helper.hpp"
 #include "error_defs.hpp"
 #include "gui.hpp"
 #include "ini_helper.hpp"
+#include "keyboard_helper.hpp"
 #include "mod.hpp"
+#include "name_generator.hpp"
 #include "path_helper.hpp"
 #include "string_helper.hpp"
 
@@ -35,11 +38,13 @@
 #include <switch.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <cstdio>
@@ -64,6 +69,9 @@ static HidNpadButton g_key_edit_lo = HidNpadButton_Y;
 
 static bool g_dirty = false;
 static bool g_dirty_warned = false;
+static bool mass_renaming_first_warned = false;
+static bool mass_renaming_second_warned = false;
+static bool mass_renaming_final_warned = false;
 
 static std::string g_status_msg = "";
 static bool g_tmp_status = false;
@@ -216,6 +224,11 @@ int initialize(void) {
     CONSOLE_SET_POS(0, 0);
     CONSOLE_CLEAR_SCREEN();
     CONSOLE_SET_ATTRS(CONSOLE_ATTR_BOLD);
+    printf("Attempting to retrieve mod aliases, if any...\n");
+
+    // load alias file
+    AliasManager::getInstance()->loadSavedAlias(SKYMM_NX_ALIAS_TXT_FILE);
+
     printf("Discovering available mods...\n");
 
     if (RC_FAILURE(rc = discoverMods())) {
@@ -269,9 +282,18 @@ static void redrawHeader(void) {
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
+    // make it clear that this is a modified version
+    // in case anyone somehow downloads this by accident before
+    // i private the repo or update README
+    printf(", modified by SundayReds");
+    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_MOVE_LEFT(255);
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("NOTE: Shorten suffixes eg. 'Mod - Meshes.bsa' should be 'Mod - M.bsa'.");
 
-    CONSOLE_MOVE_DOWN(2);
+
+    CONSOLE_MOVE_DOWN(1);
     CONSOLE_MOVE_LEFT(255);
     printf(HRULE);
 }
@@ -303,12 +325,15 @@ static void redrawFooter() {
     printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_MOVE_DOWN(1);
-    printf("(-) Save Changes    |  (+) Exit");
+    printf("(-) Save Changes | (X) Set Alias | (R+L) Auto-rename ALL | (+) Exit ");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
 static void clearTempEffects(void) {
     g_dirty_warned = false;
+    mass_renaming_first_warned = false;
+    mass_renaming_second_warned = false;
+    mass_renaming_final_warned = false;
 
     if (g_tmp_status) {
         g_status_msg = "";
@@ -339,6 +364,117 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui) {
             gui.scrollSelection(g_scroll_dir);
 
             clearTempEffects();
+        }
+    }
+}
+
+void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) {
+
+    // ESP
+    std::string data_dir = getRomfsPath(SKYRIM_DATA_DIR) + DIR_SEP;
+    if (mod->has_esp) {
+        rename((data_dir + mod->base_name + DOT + EXT_ESP).c_str(), 
+                (data_dir + new_base_name + DOT + EXT_ESP).c_str());
+    }
+
+    // ESM
+    if (mod->is_master) {
+        rename((data_dir + mod->base_name + DOT + EXT_ESM).c_str(),
+                (data_dir + new_base_name + DOT + EXT_ESM).c_str());
+    }
+
+    // PLAIN BSA
+    if (std::filesystem::exists(data_dir + mod->base_name + DOT + EXT_BSA)) {
+        rename((data_dir + mod->base_name + DOT + EXT_BSA).c_str(),
+                (data_dir + new_base_name + DOT + EXT_BSA).c_str());
+    }
+
+    std::vector<std::string> new_bsa_suffixes;
+
+    // ALL SUFFIXED BSA's
+    for (auto &suffix : mod->bsa_suffixes) {
+
+        // exclude empty suffix, already covered
+        if (suffix.empty()) {
+            new_bsa_suffixes.emplace_back(SUFFIX_NONE);
+            continue;
+        }
+
+        // if is long suffix, change it to short suffix while renaming
+        if (LONG_SUFFIXES.count(suffix)) {
+            new_bsa_suffixes.emplace_back(LONG_TO_SHORT_SUFFIXES.at(suffix));
+            rename((data_dir + mod->base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str(),
+                    (data_dir + new_base_name + SP + DASH + SP + LONG_TO_SHORT_SUFFIXES.at(suffix)
+                        + DOT + EXT_BSA).c_str());
+            continue;
+
+        } else { // else, it's either a short suffix or unknown. we leave it alone
+            new_bsa_suffixes.emplace_back(suffix);
+            rename((data_dir + mod->base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str(),
+                    (data_dir + new_base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str());
+        }
+    }
+
+    // re-construct mod->enabled_bsas with shortened suffixes
+    std::map<std::string, int> new_enabled_bsas;
+    for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
+        if (LONG_SUFFIXES.count(suffix_pair.first)) {
+            new_enabled_bsas.insert(std::pair(LONG_TO_SHORT_SUFFIXES.at(suffix_pair.first), suffix_pair.second));
+        } else {
+            new_enabled_bsas.insert(std::pair(suffix_pair.first, suffix_pair.second));
+        }
+    }
+
+    // lastly, reflect the base_name change in SkyrimMod
+    mod->base_name = new_base_name;
+    mod->bsa_suffixes = new_bsa_suffixes;
+    mod->enabled_bsas = new_enabled_bsas;
+}
+
+void massAutoRenameMods() {
+    // randomly generate base_names for each mod. prevents conflicts when renaming.
+    std::unordered_map<std::string, std::string> tmpname_to_basename;
+    NameGenerator name_generator = NameGenerator();
+
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+
+        g_status_msg = "DO NOT CLOSE: Renaming mod '" + mod->base_name + "' ...";
+        redrawFooter();
+        consoleUpdate(NULL);
+
+        // get randomized temp name
+        std::string tmp_name_str = NameGenerator::generateRandomAlphaString(20);
+
+        // store original base_name, and remember which random name it was assigned
+        tmpname_to_basename[tmp_name_str] = mod->base_name;
+
+        // change all associated files to temp name
+        renameModFiles(mod, tmp_name_str);
+    }
+
+    // start renaming them to shortened names
+    // at this point they all have randomized names, so
+    // astronomically low chance of conflict.
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+
+        // generate next shortest name
+        std::string new_name = name_generator.generateNext();
+
+        // retrieve the original name of this mod
+        std::string original_base = tmpname_to_basename.at(mod->base_name);
+        
+        // rename to the newly generated shortname
+        renameModFiles(mod, new_name);
+
+        // if it had an old alias, update the base_name only and keep old alias
+        // else, set old base_name as an alias of the newly generated name
+        if (AliasManager::getInstance()->hasAlias(original_base)) {
+            AliasManager::getInstance()->updateBaseName(original_base, new_name);
+        } else {
+            AliasManager::getInstance()->setAlias(new_name, original_base);
         }
     }
 }
@@ -475,6 +611,93 @@ int main(int argc, char **argv) {
             g_status_msg = "Wrote changes to SDMC!";
             g_tmp_status = true;
             redrawFooter();
+        }
+
+        if (kDown & HidNpadButton_X) {
+            //find out which mod was selected
+            std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+            bool currently_has_alias = AliasManager::getInstance()->hasAlias(mod->base_name);
+            //bring up keyboard and capture input
+            std::string retstr;
+            Result rc = Keyboard::show(retstr,
+                                        // title
+                                        "Enter new alias for '"
+                                            + mod->base_name
+                                            + ((currently_has_alias) ? " (" 
+                                                                        + AliasManager::getInstance()
+                                                                            ->getAlias(mod->base_name) 
+                                                                        + ")'"
+                                                                    : "'"),
+                                        // guide text                
+                                         "New Alias (MAX: " 
+                                        + std::to_string(MAX_INPUT_LENGTH) 
+                                        + " characters)",
+                                        // initial starting text
+                                        (currently_has_alias) ? AliasManager::getInstance()
+                                                                ->getAlias(mod->base_name)
+                                                            : std::string());
+
+            if (R_SUCCEEDED(rc)) {
+                //save alias
+                AliasManager::getInstance()->setAlias(mod->base_name, retstr);
+
+                //push updates to display
+                gui.redrawCurrentRow();
+                g_status_msg = (retstr.empty())? "Alias successfully removed."
+                                                : "Alias successfully set.";
+                redrawFooter();
+            }
+            clearTempEffects();
+        }
+
+        // warnings for mass-auto-renaming function
+        if ((kDown & HidNpadButton_R) 
+            && (kDown & HidNpadButton_L)) {
+            // first warning
+            if (!mass_renaming_first_warned) {
+                g_status_msg = "WARNING: Will auto-rename ALL modfiles and auto assign alias. (R + L) to cont.";
+                g_tmp_status = true;
+                mass_renaming_first_warned = true;
+                redrawFooter();
+            // second warning
+            } else if (!mass_renaming_second_warned) {
+                g_status_msg = "WARNING: Renaming modfiles can affect current saves. (R + L) to cont.";
+                g_tmp_status = true;
+                mass_renaming_second_warned = true;
+                redrawFooter();
+            // final warning, different button combination needed to progress
+            } else if (!mass_renaming_final_warned) {
+                g_status_msg = "FINAL: Make sure you have backups. (RStick + LStick) to start.";
+                g_tmp_status = true;
+                mass_renaming_final_warned = true;
+                redrawFooter();
+            }
+        }
+
+        // execute mass auto renaming function
+        if ((kDown & HidNpadButton_StickR) 
+            && (kDown & HidNpadButton_StickL)) {
+            if (mass_renaming_final_warned) {
+                if (getGlobalModList().empty()) {
+                    clearTempEffects();
+                    g_status_msg = "No Mods were detected. Auto-renaming process halted.";
+                    redrawFooter();
+                } else {
+                    // mass rename and auto alias generation
+                    massAutoRenameMods();
+
+                    // rewrite plugins and inis
+                    writePluginsFile();
+                    writeIniChanges();
+
+                    // redraw lists
+                    gui.redraw();
+
+                    clearTempEffects();
+                    g_status_msg = "ALl Modfiles successfully auto-renamed and aliases auto-assigned.";
+                    redrawFooter();
+                }
+            }
         }
 
         consoleUpdate(NULL);
