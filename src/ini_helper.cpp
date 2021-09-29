@@ -216,7 +216,7 @@ static int writeFileList(const char *path, StdIni &ini, std::string key,
     for (auto mf_it = file_list.cbegin(); mf_it != file_list.cend(); mf_it++) {
         ss << mf_it->base_name;
         if (!mf_it->suffix.empty()) {
-            ss << " - " << mf_it->suffix;
+            ss << SP << DASH << SP << mf_it->suffix;
         }
         ss << ".bsa";
 

@@ -28,8 +28,11 @@ When the save function is invoked, the INI and `Plugins` files will be modified 
 - NOTE: Some mod authors hard-code their filenames, which means that changing the names of files will break them. This generally is bad practice and most good modders avoid it, but there are some authors who still do this anyway. There is no way of telling whether or not a mod contains hardcoded file links, so if one of your mods break after renaming, you might want to try renaming it back to their original names
 - IMPORTANT: backup your mods, `Skyrim.ini`, `Skyrim_en.ini`, and `Plugins` before attempting to use this function (plus it's generally good practice anyway). This function works but has not been rigorously tested.
 
+4. Small add-on to the above feature: auto-generate a shortened name for a single mod only, instead of all mods. If the mod did not have an alias before renaming, its original name will be automatically set as the alias after renaming.
 
-4. Small fix to suffix checking for Animations.
+5. Ability to rename the base name of a mod (and all files associated with the base name) in-app to whatever the user chooses. If the mod did not have an alias before renaming, its original name will be automatically set as the alias after renaming.
+
+6. Other small fixes to under-the-hood functionality.
 
 The main application was not made by me. All credit for that goes to [caseif](https://github.com/caseif/SkyMM-NX).
 
@@ -59,8 +62,8 @@ Currently, the app requires that all mods follow a standard naming scheme:
 * COMPLETED - Add an in-app function to rename all `.bsa` and `.esp` files in the `Data/` folder to short names like `a.esp`, then automatically generating aliases for all renamed mods that did not previously have an alias, based on their original filename
     - eg 1. `Mod1` will be become `A (Mod1)` in-app, and its associated `.esp` file will be renamed from `Mod1.esp` to `A.esp` (along with its other files)
     - eg 2. `Mod2 (Aho Project)` will become `B (Aho Project)` in-app (no change to alias since it already has one), and its associated `.esp` file will be renamed from `Mod2.esp` to `B.esp` (along with its other files)
-* Same as above, but just for one mod instead of all the mods. ie. find a shortened name that does not conflict, then rename the modfiles and shorten all relevant suffixes.
-* Fix/Tweak `.ini` writing. According to the author of Skyrim-NX-Toolkit, textures and voices `.bsa` files are supposed to go under `sResourceArchiveList2=` in `Skyrim.ini` instead of `sArchiveToLoadInMemoryList=`. The current app just adds them all under the latter, but for some reason still works perfectly fine. Even so, by distributing the `.bsa` files as per the Skyrim-NX-Toolkit method, we can reduce more bloat from the `sArchiveToLoadInMemoryList=`, which should prevent us from hitting the 1024 limit earlier.
+* COMPLETED - Same as above, but just for one mod instead of all the mods. ie. find a shortened name that does not conflict, then rename the modfiles and shorten all relevant suffixes.
+* COMPLETED - Fix/Tweak `.ini` writing. According to the author of Skyrim-NX-Toolkit, textures and voices `.bsa` files are supposed to go under `sResourceArchiveList2=` in `Skyrim.ini` instead of `sArchiveToLoadInMemoryList=`. The current app just adds them all under the latter, but for some reason still works perfectly fine. Even so, by distributing the `.bsa` files as per the Skyrim-NX-Toolkit method, we can reduce more bloat from the `sArchiveToLoadInMemoryList=`, which should prevent us from hitting the 1024 limit earlier.
 
 ### Building
 

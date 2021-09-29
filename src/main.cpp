@@ -72,6 +72,7 @@ static bool g_dirty_warned = false;
 static bool mass_renaming_first_warned = false;
 static bool mass_renaming_second_warned = false;
 static bool mass_renaming_final_warned = false;
+static bool single_renaming_warned = false;
 
 static std::string g_status_msg = "";
 static bool g_tmp_status = false;
@@ -322,10 +323,10 @@ static void redrawFooter() {
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
-    printf("(Up/Down) Navigate  |  (A) Toggle Mod  |  (Y) (hold) Change Load Order");
+    printf("(A) Toggle | (Y) (hold) Change Load Order | (-) Save | (+) Exit");
     CONSOLE_MOVE_LEFT(255);
-    CONSOLE_MOVE_DOWN(1);
-    printf("(-) Save Changes | (X) Set Alias | (R+L) Auto-rename ALL | (+) Exit ");
+    CONSOLE_MOVE_DOWN(2);
+    printf("(B) Rename | (X) Nickname | (ZR) Auto-rename | (R+L) Auto-rename ALL");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
@@ -334,6 +335,7 @@ static void clearTempEffects(void) {
     mass_renaming_first_warned = false;
     mass_renaming_second_warned = false;
     mass_renaming_final_warned = false;
+    single_renaming_warned = false;
 
     if (g_tmp_status) {
         g_status_msg = "";
@@ -432,6 +434,35 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
     mod->base_name = new_base_name;
     mod->bsa_suffixes = new_bsa_suffixes;
     mod->enabled_bsas = new_enabled_bsas;
+}
+
+bool hasNamingConflicts(std::string base_name) {
+    for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
+        if (mod->base_name == base_name) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void autoRenameMod(std::shared_ptr<SkyrimMod> mod) {
+    NameGenerator name_generator = NameGenerator();
+    std::string new_name = name_generator.generateNext();
+
+    while (hasNamingConflicts(new_name)) {
+        new_name = name_generator.generateNext();
+    }
+
+    std::string original_base = mod->base_name;
+
+    renameModFiles(mod, new_name);
+    // if it had an old alias, update the base_name only and keep old alias
+    // else, set old base_name as an alias of the newly generated name
+    if (AliasManager::getInstance()->hasAlias(original_base)) {
+        AliasManager::getInstance()->updateBaseName(original_base, new_name);
+    } else {
+        AliasManager::getInstance()->setAlias(new_name, original_base);
+    }
 }
 
 void massAutoRenameMods() {
@@ -648,6 +679,77 @@ int main(int argc, char **argv) {
                 redrawFooter();
             }
             clearTempEffects();
+        }
+
+        // Rename modfiles with name provided by user
+        if (kDown & HidNpadButton_B) {
+            std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+            std::string new_name = Keyboard::show("Enter new name for '" // title
+                                                    + mod->base_name
+                                                    + ((AliasManager::getInstance()->hasAlias(mod->base_name)) ? " (" + 
+                                                                    AliasManager::getInstance()
+                                                                                ->getAlias(mod->base_name) 
+                                                                    + ")'"
+                                                                : "'"),
+
+                                                // guide text                
+                                                "New Mod Name (MAX: " 
+                                                + std::to_string(MAX_INPUT_LENGTH) 
+                                                + " characters)",
+
+                                                // initial starting text
+                                                mod->base_name);
+            if (!new_name.empty()) {
+                if (hasNamingConflicts(new_name)) {
+                    g_status_msg = "Mod '" + new_name + "' already exists.";
+                    redrawFooter();
+                } else {
+                    std::string original_base = mod->base_name;
+                    renameModFiles(mod, new_name);
+                    if (AliasManager::getInstance()->hasAlias(original_base)) {
+                        AliasManager::getInstance()->updateBaseName(original_base, new_name);
+                    } else {
+                        AliasManager::getInstance()->setAlias(new_name, original_base);
+                    }
+                    writePluginsFile();
+                    writeIniChanges();
+                    clearTempEffects();
+                    gui.redrawCurrentRow();
+                    g_status_msg = "Mod successfully auto-renamed.";
+                    redrawFooter();
+                }
+            }
+        }
+
+        // warning for single-auto-renaming function
+        if (kDown & HidNpadButton_ZR) {
+            if (!single_renaming_warned) {
+                g_status_msg = "WARNING: Will auto-rename to next shortest name. (LStick) to cont.";
+                g_tmp_status = true;
+                single_renaming_warned = true;
+                redrawFooter();
+            }
+        }
+
+        // execute single-auto-rename function
+        if (kDown & HidNpadButton_StickL) {
+            if (getGlobalModList().empty()) {
+                    clearTempEffects();
+                    g_status_msg = "No Mods were detected. Auto-renaming process halted.";
+                    redrawFooter();
+            } else if (single_renaming_warned) {
+                std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+                g_status_msg = "Auto-renaming mod in progress...";
+                redrawFooter();
+                consoleUpdate(NULL);
+                autoRenameMod(mod);
+                writePluginsFile();
+                writeIniChanges();
+                clearTempEffects();
+                gui.redrawCurrentRow();
+                g_status_msg = "Mod successfully auto-renamed.";
+                redrawFooter();
+            }
         }
 
         // warnings for mass-auto-renaming function
