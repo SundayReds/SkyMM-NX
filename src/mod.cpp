@@ -86,7 +86,8 @@ ModStatus SkyrimMod::getStatus(void) {
     } else {
         bool bad_anims = false;
         for (auto bsa_pair : enabled_bsas) {
-            if (bsa_pair.first == SUFFIX_ANIMATIONS && bsa_pair.second != 2) {
+            if ((bsa_pair.first == SUFFIX_ANIMATIONS || bsa_pair.first == SUFFIX_ANIMATIONS_LONG) 
+                    && bsa_pair.second != 2) {
                 bsa_status = ModStatus::PARTIAL;
                 bad_anims = true;
                 break;
@@ -114,7 +115,7 @@ ModStatus SkyrimMod::getStatus(void) {
 void SkyrimMod::enable(void) {
     enabled_bsas.clear();
     for (std::string bsa : bsa_suffixes) {
-        int count = bsa == SUFFIX_ANIMATIONS ? 2 : 1;
+        int count = (bsa == SUFFIX_ANIMATIONS || bsa == SUFFIX_ANIMATIONS_LONG) ? 2 : 1;
         enabled_bsas.insert(std::pair(bsa, count));
     }
 
