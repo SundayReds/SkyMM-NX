@@ -23,19 +23,12 @@
  * THE SOFTWARE.
  */
 
-#include "console_helper.hpp"
-#include "error_defs.hpp"
 #include "mod.hpp"
-#include "string_helper.hpp"
-
-#include <algorithm>
-#include <memory>
-#include <string>
 
 static ModList g_mod_list;
 
 ModFile ModFile::fromFileName(std::string const &file_name) {
-    size_t dot_index = file_name.find_last_of('.');
+    size_t dot_index = file_name.find_last_of(DOT);
     if (dot_index == std::string::npos) {
         return {ModFileType::UNKNOWN};
     }
@@ -48,15 +41,15 @@ ModFile ModFile::fromFileName(std::string const &file_name) {
     ext = trim(ext);
 
     if (ext == EXT_BSA) {
-        size_t dash_index = base.rfind(" - ");
+        size_t dash_index = base.rfind(std::string(SP) + DASH + SP);
         if (dash_index == std::string::npos) {
-            suffix = "";
+            suffix = SUFFIX_NONE;
         } else {
             suffix = base.substr(dash_index + 3);
             base = base.substr(0, dash_index);
         }
     } else if (ext == EXT_ESP || ext == EXT_ESM) {
-        suffix = "";
+        suffix = SUFFIX_NONE;
     } else {
         return {ModFileType::UNKNOWN};
     }

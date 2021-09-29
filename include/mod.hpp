@@ -25,6 +25,13 @@
 
 #pragma once
 
+#include "console_helper.hpp"
+#include "error_defs.hpp"
+#include "mod.hpp"
+#include "path_helper.hpp"
+#include "string_helper.hpp"
+
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
