@@ -437,8 +437,12 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
 }
 
 bool hasNamingConflicts(std::string base_name) {
+    std::string lower_base_name = base_name;
+    transform(lower_base_name.begin(), lower_base_name.end(), lower_base_name.begin(), ::tolower);
     for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
-        if (mod->base_name == base_name) {
+        std::string lower_mod_name = mod->base_name;
+        transform(lower_mod_name.begin(), lower_mod_name.end(), lower_mod_name.begin(), ::tolower);
+        if (lower_base_name == lower_mod_name) {
             return true;
         }
     }
