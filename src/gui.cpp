@@ -118,6 +118,15 @@ void ModGui::redrawRow(size_t gui_y) {
     }
 
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("][");
+    
+    if (cur_mod->has_long_suffixes) {
+        CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
+        printf("L");
+    } else {
+        printf(" ");
+    }
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
     printf("] ");
 
     if (highlighted) {

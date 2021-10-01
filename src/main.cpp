@@ -57,7 +57,7 @@
 #define __VERSION "Unknown"
 #endif
 
-#define HEADER_HEIGHT 3
+#define HEADER_HEIGHT 4
 #define FOOTER_HEIGHT 5
 
 #define HRULE "--------------------------------"
@@ -73,6 +73,7 @@ static bool mass_renaming_first_warned = false;
 static bool mass_renaming_second_warned = false;
 static bool mass_renaming_final_warned = false;
 static bool single_renaming_warned = false;
+static bool change_suffix_form_warned = false;
 
 static std::string g_status_msg = "";
 static bool g_tmp_status = false;
@@ -135,6 +136,9 @@ int discoverMods() {
             mod->is_master = true;
         } else if (mod_file.type == ModFileType::BSA) {
             mod->bsa_suffixes.insert(mod->bsa_suffixes.end(), mod_file.suffix);
+            if (LONG_SUFFIXES.count(mod_file.suffix)) {
+                mod->has_long_suffixes = true;
+            }
         } else {
             PANIC();
             return -1;
@@ -283,15 +287,26 @@ static void redrawHeader(void) {
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("SkyMM-NX v" STRINGIZE(__VERSION) " by caseif");
-    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_RED);
     // make it clear that this is a modified version
     // in case anyone somehow downloads this by accident before
     // i private the repo or update README
     printf(", modified by SundayReds");
-    CONSOLE_MOVE_DOWN(1);
+    CONSOLE_MOVE_DOWN(2);
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
-    printf("NOTE: Shorten suffixes eg. 'Mod - Meshes.bsa' should be 'Mod - M.bsa'.");
+    printf("[");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
+    printf("On");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("/");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
+    printf("Partial");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf("][SuffixLen] ModBaseName ");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
+    printf("(Alias)");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 
 
     CONSOLE_MOVE_DOWN(1);
@@ -323,10 +338,10 @@ static void redrawFooter() {
     CONSOLE_MOVE_DOWN(1);
     CONSOLE_CLEAR_LINE();
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_GREEN);
-    printf("(A) Toggle | (Y) (hold) Change Load Order | (-) Save | (+) Exit");
+    printf("(A) Toggle | (Y) (hold) Change Load Order | (-) Save | (ZL) Suffix Form ");
     CONSOLE_MOVE_LEFT(255);
     CONSOLE_MOVE_DOWN(2);
-    printf("(B) Rename | (X) Nickname | (ZR) Auto-rename | (R+L) Auto-rename ALL");
+    printf("(B) Rename | (X) Nickname | (ZR) AutoRename | (R+L) AutoRename ALL | (+) Exit");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
 }
 
@@ -336,6 +351,7 @@ static void clearTempEffects(void) {
     mass_renaming_second_warned = false;
     mass_renaming_final_warned = false;
     single_renaming_warned = false;
+    change_suffix_form_warned = false;
 
     if (g_tmp_status) {
         g_status_msg = "";
@@ -370,7 +386,18 @@ void handleScrollHold(u64 kDown, u64 kHeld, HidNpadButton key, ModGui &gui) {
     }
 }
 
-void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) {
+void renameModFiles(std::shared_ptr<SkyrimMod> mod, 
+                    std::string &new_base_name,
+                    bool change_suffix_form = false) {
+
+    // this flag is important for the rare case where some file suffixes
+    // of a mod are in short form while others are in long form
+    // this flag is used to rectify them all uniformly to the target form
+    // instead of just inverting all the forms.
+    bool change_to_short_suffixes = false;
+    if (change_suffix_form && mod->has_long_suffixes) {
+        change_to_short_suffixes = true;
+    }
 
     // ESP
     std::string data_dir = getRomfsPath(SKYRIM_DATA_DIR) + DIR_SEP;
@@ -402,8 +429,9 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
             continue;
         }
 
-        // if is long suffix, change it to short suffix while renaming
-        if (LONG_SUFFIXES.count(suffix)) {
+        // if is long suffix and change_suffix_form flag is raised,
+        // change it to short suffix while renaming
+        if (change_suffix_form && change_to_short_suffixes && LONG_SUFFIXES.count(suffix)) {
             new_bsa_suffixes.emplace_back(LONG_TO_SHORT_SUFFIXES.at(suffix));
             rename((data_dir + mod->base_name + SP + DASH + SP + suffix
                         + DOT + EXT_BSA).c_str(),
@@ -411,7 +439,15 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
                         + DOT + EXT_BSA).c_str());
             continue;
 
-        } else { // else, it's either a short suffix or unknown. we leave it alone
+        // likewise for short suffixes if flag is raised.
+        } else if (change_suffix_form && !change_to_short_suffixes && SHORT_SUFFIXES.count(suffix)) {
+            new_bsa_suffixes.emplace_back(SHORT_TO_LONG_SUFFIXES.at(suffix));
+            rename((data_dir + mod->base_name + SP + DASH + SP + suffix
+                        + DOT + EXT_BSA).c_str(),
+                    (data_dir + new_base_name + SP + DASH + SP + SHORT_TO_LONG_SUFFIXES.at(suffix)
+                        + DOT + EXT_BSA).c_str());
+
+        } else { // else flag not raised or unidentified suffix. we leave it alone
             new_bsa_suffixes.emplace_back(suffix);
             rename((data_dir + mod->base_name + SP + DASH + SP + suffix
                         + DOT + EXT_BSA).c_str(),
@@ -420,20 +456,25 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod, std::string &new_base_name) 
         }
     }
 
-    // re-construct mod->enabled_bsas with shortened suffixes
+    // re-construct mod->enabled_bsas (with changed suffixes if flag enabled)
     std::map<std::string, int> new_enabled_bsas;
     for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
-        if (LONG_SUFFIXES.count(suffix_pair.first)) {
+        if (change_suffix_form && change_to_short_suffixes && LONG_SUFFIXES.count(suffix_pair.first)) {
             new_enabled_bsas.insert(std::pair(LONG_TO_SHORT_SUFFIXES.at(suffix_pair.first), suffix_pair.second));
+        } else if (change_suffix_form && !change_to_short_suffixes && SHORT_SUFFIXES.count(suffix_pair.first)) {
+            new_enabled_bsas.insert(std::pair(SHORT_TO_LONG_SUFFIXES.at(suffix_pair.first), suffix_pair.second));
         } else {
             new_enabled_bsas.insert(std::pair(suffix_pair.first, suffix_pair.second));
         }
     }
 
-    // lastly, reflect the base_name change in SkyrimMod
+    // lastly, reflect the base_name and suffix change in SkyrimMod
     mod->base_name = new_base_name;
     mod->bsa_suffixes = new_bsa_suffixes;
     mod->enabled_bsas = new_enabled_bsas;
+    if (change_suffix_form) {
+        mod->has_long_suffixes = !mod->has_long_suffixes;
+    }
 }
 
 bool hasNamingConflicts(std::string base_name) {
@@ -459,7 +500,7 @@ void autoRenameMod(std::shared_ptr<SkyrimMod> mod) {
 
     std::string original_base = mod->base_name;
 
-    renameModFiles(mod, new_name);
+    renameModFiles(mod, new_name, mod->has_long_suffixes);
     // if it had an old alias, update the base_name only and keep old alias
     // else, set old base_name as an alias of the newly generated name
     if (AliasManager::getInstance()->hasAlias(original_base)) {
@@ -501,8 +542,8 @@ void massAutoRenameMods() {
         // retrieve the original name of this mod
         std::string original_base = tmpname_to_basename.at(mod->base_name);
         
-        // rename to the newly generated shortname
-        renameModFiles(mod, new_name);
+        // rename to the newly generated shortname. also shorten suffix if applicable
+        renameModFiles(mod, new_name, mod->has_long_suffixes);
 
         // if it had an old alias, update the base_name only and keep old alias
         // else, set old base_name as an alias of the newly generated name
@@ -735,7 +776,21 @@ int main(int argc, char **argv) {
             }
         }
 
-        // execute single-auto-rename function
+
+        // warning for changing suffix form
+        if (kDown & HidNpadButton_ZL) {
+            if (!change_suffix_form_warned) {
+                std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+                g_status_msg = std::string("NOTE: Will change all suffixes of selected mod to ")
+                                + ((mod->has_long_suffixes) ? "short " : "long ")
+                                + "form. (LStick) to cont.";
+                g_tmp_status = true;
+                change_suffix_form_warned = true;
+                redrawFooter();
+            }
+        }
+
+        // execute single-auto-rename function or change-suffix-form function, whicever applicable
         if (kDown & HidNpadButton_StickL) {
             if (getGlobalModList().empty()) {
                     clearTempEffects();
@@ -752,6 +807,22 @@ int main(int argc, char **argv) {
                 clearTempEffects();
                 gui.redrawCurrentRow();
                 g_status_msg = "Mod successfully auto-renamed.";
+                redrawFooter();
+            } else if (change_suffix_form_warned) {
+                std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
+                g_status_msg = std::string("Changing all suffixes of this mod to their " )
+                                + ((mod->has_long_suffixes) ? "short " : "long ")
+                                + "forms...";
+                redrawFooter();
+                consoleUpdate(NULL);
+                renameModFiles(mod, mod->base_name, true);
+                writePluginsFile();
+                writeIniChanges();
+                clearTempEffects();
+                gui.redrawCurrentRow();
+                g_status_msg = std::string("All suffixes of this mod successfully changed to their ")
+                                + ((mod->has_long_suffixes) ? "long " : "short ")
+                                + "forms.";
                 redrawFooter();
             }
         }
