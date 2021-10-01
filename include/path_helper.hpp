@@ -33,6 +33,9 @@
 #define SKYRIM_INI_FILE "Skyrim.ini"
 #define SKYRIM_INI_LANG_FILE_PREFIX "Skyrim_"
 #define SKYRIM_PLUGINS_FILE "Plugins"
+#define DIR_SEP "/"
+//#define SKYMM_NX_ALIAS_TXT_FILE "sdmc:/switch/skymm_nx_saved_alias.txt"
+#define SKYMM_NX_ALIAS_TXT_FILE "sdmc:/atmosphere/contents/01000A10041EA000/romfs/Data/skymm_aliases.txt"
 
 #define LANG_CODE_MAX_LEN 6
 

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "alias_manager.hpp"
 #include "mod.hpp"
 
 #include <memory>
