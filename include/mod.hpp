@@ -68,6 +68,14 @@ static const std::unordered_map<std::string, std::string> LONG_TO_SHORT_SUFFIXES
     {SUFFIX_VOICES_LONG, SUFFIX_VOICES}
 };
 
+static const std::unordered_map<std::string, std::string> SHORT_TO_LONG_SUFFIXES = {
+    {SUFFIX_ANIMATIONS, SUFFIX_ANIMATIONS_LONG},
+    {SUFFIX_MESHES, SUFFIX_MESHES_LONG},
+    {SUFFIX_SOUNDS, SUFFIX_SOUNDS_LONG},
+    {SUFFIX_TEXTURES, SUFFIX_TEXTURES_LONG},
+    {SUFFIX_VOICES, SUFFIX_VOICES_LONG}
+};
+
 enum class ModStatus {
     ENABLED,
     DISABLED,
@@ -94,6 +102,7 @@ struct SkyrimMod {
     bool has_esp;
     bool is_master;
     bool esp_enabled;
+    bool has_long_suffixes;
     std::vector<std::string> bsa_suffixes;
     std::map<std::string, int> enabled_bsas;
 
@@ -102,6 +111,7 @@ struct SkyrimMod {
             has_esp(false),
             is_master(false),
             esp_enabled(false),
+            has_long_suffixes(false),
             bsa_suffixes(),
             enabled_bsas() {
     }
