@@ -749,6 +749,9 @@ int main(int argc, char **argv) {
                     g_status_msg = "Mod '" + new_name + "' already exists.";
                     redrawFooter();
                 } else {
+                    g_status_msg = "Renaming mod in progress...";
+                    redrawFooter();
+                    consoleUpdate(NULL);
                     std::string original_base = mod->base_name;
                     renameModFiles(mod, new_name);
                     if (AliasManager::getInstance()->hasAlias(original_base)) {
@@ -760,7 +763,7 @@ int main(int argc, char **argv) {
                     writeIniChanges();
                     clearTempEffects();
                     gui.redrawCurrentRow();
-                    g_status_msg = "Mod successfully auto-renamed.";
+                    g_status_msg = "Mod successfully renamed.";
                     redrawFooter();
                 }
             }
@@ -783,14 +786,14 @@ int main(int argc, char **argv) {
                 std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
                 g_status_msg = std::string("NOTE: Will change all suffixes of selected mod to ")
                                 + ((mod->has_long_suffixes) ? "short " : "long ")
-                                + "form. (LStick) to cont.";
+                                + "form. (RStick) to cont.";
                 g_tmp_status = true;
                 change_suffix_form_warned = true;
                 redrawFooter();
             }
         }
 
-        // execute single-auto-rename function or change-suffix-form function, whicever applicable
+        // execute single-auto-rename function
         if (kDown & HidNpadButton_StickL) {
             if (getGlobalModList().empty()) {
                     clearTempEffects();
@@ -808,6 +811,15 @@ int main(int argc, char **argv) {
                 gui.redrawCurrentRow();
                 g_status_msg = "Mod successfully auto-renamed.";
                 redrawFooter();
+            }
+        }
+
+        // execute suffix-lengthening-or-shortening function
+        if (kDown & HidNpadButton_StickR) {
+            if (getGlobalModList().empty()) {
+                    clearTempEffects();
+                    g_status_msg = "No Mods were detected. No suffixes to change.";
+                    redrawFooter();
             } else if (change_suffix_form_warned) {
                 std::shared_ptr<SkyrimMod> mod = gui.getSelectedMod();
                 g_status_msg = std::string("Changing all suffixes of this mod to their " )
