@@ -303,7 +303,11 @@ static void redrawHeader(void) {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_YELLOW);
     printf("Partial");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
-    printf("][SuffixLen] ModBaseName ");
+    printf("][");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
+    printf("LongSuffix");
+    CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
+    printf(")] ModBaseName ");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("(Alias)");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
@@ -315,7 +319,7 @@ static void redrawHeader(void) {
 }
 
 static void redrawFooter() {
-    CONSOLE_SET_POS(39, 0);
+    CONSOLE_SET_POS(40, 0);
     CONSOLE_CLEAR_LINE();
     printf(HRULE);
     CONSOLE_MOVE_LEFT(255);
@@ -474,6 +478,10 @@ void renameModFiles(std::shared_ptr<SkyrimMod> mod,
     mod->enabled_bsas = new_enabled_bsas;
     if (change_suffix_form) {
         mod->has_long_suffixes = !mod->has_long_suffixes;
+    }
+    // find out what kind of convention original author was using for enabled_bsas and optimize this
+    if (mod->getStatus() == ModStatus::ENABLED || mod->getStatus() == ModStatus::PARTIAL) {
+        mod->enable(); // rebuild enabled_bsas using original author's function just in case
     }
 }
 
