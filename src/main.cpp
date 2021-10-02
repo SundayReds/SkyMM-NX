@@ -307,7 +307,7 @@ static void redrawHeader(void) {
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_MAGENTA);
     printf("LongSuffix");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
-    printf(")] ModBaseName ");
+    printf("] ModBaseName ");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_CYAN);
     printf("(Alias)");
     CONSOLE_SET_COLOR(CONSOLE_COLOR_FG_WHITE);
