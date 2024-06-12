@@ -36,9 +36,11 @@
 #include <fstream>
 #include <memory>
 
-static const std::vector<std::string> g_archive_types_1 = {"", "Animations", "Meshes", "Sounds"};
-static const std::vector<std::string> g_archive_types_2 = {"Textures", "Voices"};
-static const std::vector<std::string> g_archive_types_3 = {"Animations"};
+static const std::vector<std::string> g_archive_types_1 = {SUFFIX_NONE, SUFFIX_ANIMATIONS, SUFFIX_MESHES, SUFFIX_SOUNDS,
+                                                            SUFFIX_ANIMATIONS_LONG, SUFFIX_MESHES_LONG, SUFFIX_SOUNDS_LONG};
+static const std::vector<std::string> g_archive_types_2 = {SUFFIX_TEXTURES, SUFFIX_VOICES, 
+                                                            SUFFIX_TEXTURES_LONG, SUFFIX_VOICES_LONG};
+static const std::vector<std::string> g_archive_types_3 = {SUFFIX_ANIMATIONS, SUFFIX_ANIMATIONS_LONG};
 
 static StdIni g_skyrim_ini;
 static StdIni g_skyrim_lang_ini;
@@ -138,7 +140,7 @@ int processIniDefs(ModList &final_mod_list, ModList &temp_mod_list, StdIni &ini,
 
         bool good_suffix = false;
         for (std::string expected_suffix : expected_suffixes) {
-            if (mod_file.suffix.find_last_of(expected_suffix, expected_suffix.size())) {
+            if (mod_file.suffix == expected_suffix) {
                 good_suffix = true;
                 break;
             }
@@ -202,7 +204,7 @@ static int writeFileList(const char *path, StdIni &ini, std::string key,
     for (std::shared_ptr<SkyrimMod> mod : getGlobalModList()) {
         for (std::pair<std::string, int> suffix_pair : mod->enabled_bsas) {
             for (std::string expected_suffix : expected_suffixes) {
-                if (suffix_pair.first.find(expected_suffix) == 0) {
+                if (suffix_pair.first == expected_suffix) {
                     file_list.insert(file_list.end(), {mod->is_master ? ModFileType::ESM : ModFileType::ESP, mod->base_name, suffix_pair.first});
                     break;
                 }

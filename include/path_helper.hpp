@@ -34,6 +34,11 @@
 #define SKYRIM_INI_LANG_FILE_PREFIX "Skyrim_"
 #define SKYRIM_PLUGINS_FILE "Plugins"
 
+#define DIR_SEP "/"
+#define DOT "."
+#define SP " "
+#define DASH "-"
+
 #define LANG_CODE_MAX_LEN 6
 
 std::string getRomfsPath(std::string &partial);
